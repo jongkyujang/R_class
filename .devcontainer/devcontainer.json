@@ -8,7 +8,7 @@
   },
   "overrideCommand": true,
   "remoteUser": "rstudio",
-  "postStartCommand": "rserver --server-daemonize=1",  
+  "postStartCommand": "rserver --server-daemonize=1 --server-pid-file=/home/rstudio/.local/share/rstudio-server/rserver.pid",
   "forwardPorts": [8787],
   "portsAttributes": {
     "8787": {
