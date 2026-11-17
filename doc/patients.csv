@@ -1,0 +1,7 @@
+"patient_id","age","group","expression"
+"P01",28,"Control",120
+"P02",45,"Treatment",350
+"P03",52,"Control",80
+"P04",37,"Treatment",500
+"P05",61,"Control",220
+"P06",49,"Treatment",160
