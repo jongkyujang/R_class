@@ -1,9 +1,13 @@
 {
   "name": "R Class",
-  "image": "ghcr.io/rocker-org/devcontainer/tidyverse:4",
-  "postAttachCommand": {
-    "rstudio-start": "rserver"
+  "hostRequirements": {
+    "cpus": 4
   },
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "rstudio",
+  "postStartCommand": "sudo rserver --auth-none=1 --auth-minimum-user-id=1000",
   "forwardPorts": [8787],
   "portsAttributes": {
     "8787": {
