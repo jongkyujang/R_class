@@ -16,19 +16,15 @@
 학생마다 독립적인 실습 환경이 생성됩니다.
 
 ## 2. RStudio 접속하기
-
-환경 준비가 끝나면 RStudio가 자동 실행되도록 설정되어 있습니다.
-
-브라우저에서 자동으로 열리지 않으면:
-
 1. Codespaces 화면 아래의 **PORTS** 탭을 엽니다.
 2. **8787 / RStudio** 행을 찾습니다.
-3. **Open in Browser** 아이콘을 클릭합니다.
+3. **Forwarded Address** 열에 위치한 주소(http://로 시작)를 복사하여 새로운 탭이나 창에 복사하여 실행
+
+혹은 ctrl(Mac은 Cmd)+Shift+P 후 위의 창에서 Open port in Browser -> 8787 port 선택하면 바로 창이 열립니다. 
 
 RStudio 자체의 아이디와 비밀번호는 입력하지 않습니다.
 GitHub 접속 인증이 표시되면 Codespace를 생성한 계정으로 진행합니다.
 
-> 브라우저 주소에 `localhost:8787`을 직접 입력하지 마세요.
 > PORTS 탭에서 제공하는 주소로 접속해야 합니다.
 > 8787 포트의 공개 범위는 **Private**으로 유지하세요.
 
