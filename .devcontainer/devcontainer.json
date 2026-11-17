@@ -1,0 +1,14 @@
+{
+  "name": "R Class",
+  "image": "ghcr.io/rocker-org/devcontainer/tidyverse:4",
+  "postAttachCommand": {
+    "rstudio-start": "rserver"
+  },
+  "forwardPorts": [8787],
+  "portsAttributes": {
+    "8787": {
+      "label": "RStudio",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
