@@ -8,7 +8,7 @@
   },
   "overrideCommand": true,
   "remoteUser": "rstudio",
-  "postStartCommand": "rserver",
+  "postStartCommand": "rserver --server-daemonize=1",  
   "forwardPorts": [8787],
   "portsAttributes": {
     "8787": {
