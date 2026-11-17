@@ -1,164 +1,106 @@
 # ============================================================
-# 03. 가상 환자 RNA 발현 데이터 탐색과 시각화
+# 03. RNA 발현 데이터 탐색과 시각화
 # ============================================================
 # 학습 목표
-# - 유전자 × 환자 형태의 발현 행렬 이해하기
-# - 환자별 총 count와 유전자별 기술통계 확인하기
+# - 유전자 × 샘플 형태의 발현 행렬 이해하기
+# - 샘플별 총 count와 유전자별 기술통계 확인하기
 # - 히스토그램, 박스플롯, 산점도 그리기
 #
-# 아래 데이터는 수업용으로 생성한 가상 count 데이터입니다.
-# 실제 환자 데이터가 아니며, 단순화된 시뮬레이션입니다.
+# 실제 airway RNA-seq 데이터에서 raw count 기준
+# MAD가 높은 유전자 5,000개를 선택한 데이터입니다.
+# 유전자 이름은 gene1~gene5000, 샘플 이름은 P1~P8입니다.
+# P1~P8은 환자 ID가 아니라 실험 샘플 ID입니다.
 
 library(tidyverse)
 
 
 # ============================================================
-# 1. 가상 환자 정보 만들기
+# 1. RNA count 데이터 불러오기
 # ============================================================
-# set.seed(): 같은 난수를 생성해 결과를 재현합니다.
+# 첫 번째 열의 유전자 이름을 행 이름으로 사용합니다.
+# 행: 유전자 / 열: 샘플 / 값: 유전자별 read count
 
-set.seed(123)
+getwd()
 
-metadata <- data.frame(
-  patient_id = sprintf("P%02d", 1:24),
-  group = rep(c("Control", "Treatment"), each = 12),
-  age = sample(30:75, size = 24, replace = TRUE)
+counts <- read.csv(
+  "R_class/doc/rna_counts.csv",
+  row.names = 1
 )
 
-head(metadata)
-table(metadata$group)
+# 데이터 프레임을 숫자 행렬로 변환
+counts <- as.matrix(counts)
 
-
-# ============================================================
-# 2. 가상 RNA count 행렬 만들기
-# ============================================================
-# 행: 유전자 100개
-# 열: 환자 24명
-# 값: 각 환자에서 관측된 유전자별 count
-#
-# 환자마다 총 count가 달라지고, 일부 유전자는 그룹 간
-# 평균 발현이 다르도록 설정합니다.
-# 여기서 부여한 차이는 실제 치료 효과를 의미하지 않습니다.
-
-n_genes <- 100
-n_patients <- nrow(metadata)
-
-gene_ids <- sprintf("GENE_%03d", 1:n_genes)
-
-# 유전자별 기본 발현 수준
-baseline <- rlnorm(
-  n_genes,
-  meanlog = 4,
-  sdlog = 1
-)
-
-# 환자별 count 규모 차이를 만드는 가상 계수
-sample_factor <- exp(
-  seq(log(0.5), log(2), length.out = n_patients)
-)
-
-sample_factor <- sample(sample_factor)
-
-# 각 유전자·환자 조합의 평균 count
-expected_counts <- outer(baseline, sample_factor)
-
-# Treatment 그룹에서 처음 10개 유전자의 평균을 3배로 설정
-treatment_columns <- metadata$group == "Treatment"
-
-expected_counts[1:10, treatment_columns] <-
-  expected_counts[1:10, treatment_columns] * 3
-
-# 음이항분포에서 가상 count 생성
-counts <- matrix(
-  rnbinom(
-    n_genes * n_patients,
-    mu = as.vector(expected_counts),
-    size = 10
-  ),
-  nrow = n_genes,
-  ncol = n_patients,
-  dimnames = list(gene_ids, metadata$patient_id)
-)
-
-# 처음 6개 유전자와 5명의 환자
+# 처음 6개 유전자와 5개 샘플
 counts[1:6, 1:5]
 
 dim(counts)
 class(counts)
 
-# 데이터 프레임과 달리 행렬은 모든 값의 자료형이 같습니다.
+# 행렬은 모든 값의 자료형이 같습니다.
+
+rownames(counts)[1:6]
+colnames(counts)
 
 
 # ============================================================
-# 3. 데이터 저장하기
+# 2. 데이터 구조 확인하기
 # ============================================================
-# 다음 실습에서도 이 파일들을 사용합니다.
-# 저장 위치는 현재 작업 폴더 기준입니다.
 
-getwd()
+n_genes <- nrow(counts)
+n_samples <- ncol(counts)
 
-dir.create("data", showWarnings = FALSE)
+n_genes
+n_samples
+
+# 결측값 개수
+sum(is.na(counts))
+
+# 전체 count의 최솟값과 최댓값
+range(counts)
+
+# 결과 저장 폴더
 dir.create("outputs", showWarnings = FALSE)
 
-write.csv(
-  metadata,
-  "data/patient_metadata.csv",
-  row.names = FALSE
-)
-
-# 유전자 ID를 명시적인 열로 저장
-counts_table <- data.frame(
-  gene_id = rownames(counts),
-  counts,
-  row.names = NULL
-)
-
-write.csv(
-  counts_table,
-  "data/expression_counts.csv",
-  row.names = FALSE
-)
-
 
 # ============================================================
-# 4. 환자별 총 count 확인하기
+# 3. 샘플별 총 count 확인하기
 # ============================================================
 # colSums(): 열별 합계
-# 이 데이터에서는 측정한 100개 유전자의 총 count입니다.
+# 이 데이터에서는 선택한 5,000개 유전자의 총 count입니다.
+# 전체 유전자의 총 count와는 다릅니다.
 
 total_counts <- colSums(counts)
 
 total_counts
 
-patient_summary <- metadata |>
-  mutate(
-    total_count = total_counts[patient_id],
-    detected_genes = colSums(counts > 0)[patient_id]
-  )
+sample_summary <- data.frame(
+  sample_id = colnames(counts),
+  total_count = as.numeric(total_counts),
+  detected_genes = as.numeric(colSums(counts > 0))
+)
 
-patient_summary
+sample_summary
 
-summary(patient_summary$total_count)
+summary(sample_summary$total_count)
 
-# 가장 총 count가 많은 환자부터 정렬
-patient_summary |>
+# 총 count가 많은 샘플부터 정렬
+sample_summary |>
   arrange(desc(total_count))
 
 
 # ============================================================
-# 5. 환자별 총 count 시각화
+# 4. 샘플별 총 count 시각화
 # ============================================================
 
 p_total <- ggplot(
-  patient_summary,
-  aes(x = patient_id, y = total_count, fill = group)
+  sample_summary,
+  aes(x = sample_id, y = total_count)
 ) +
-  geom_col() +
+  geom_col(fill = "steelblue") +
   labs(
-    title = "Total counts per patient",
-    x = "Patient",
-    y = "Total count",
-    fill = "Group"
+    title = "Total counts per sample",
+    x = "Sample",
+    y = "Total count (selected 5,000 genes)"
   ) +
   theme_bw() +
   theme(
@@ -169,7 +111,7 @@ print(p_total)
 
 
 # ============================================================
-# 6. 유전자별 기술통계
+# 5. 유전자별 기술통계
 # ============================================================
 # rowMeans(): 행별 평균
 # apply(counts, 1, 함수): 각 행에 함수 적용
@@ -180,7 +122,7 @@ gene_summary <- data.frame(
   mean_count = rowMeans(counts),
   median_count = apply(counts, 1, median),
   sd_count = apply(counts, 1, sd),
-  detected_patients = rowSums(counts > 0)
+  detected_samples = rowSums(counts > 0)
 )
 
 head(gene_summary)
@@ -192,32 +134,35 @@ gene_summary |>
 
 
 # ============================================================
-# 7. 시각화를 위한 긴 형태의 데이터 만들기
+# 6. 시각화를 위한 긴 형태의 데이터 만들기
 # ============================================================
-# 기존: 한 행에 유전자 하나, 여러 환자 열
-# 변환 후: 한 행에 유전자·환자 조합 하나
+# 기존: 한 행에 유전자 하나, 여러 샘플 열
+# 변환 후: 한 행에 유전자·샘플 조합 하나
 #
-# 유전자 100개 × 환자 24명 = 2,400개 행
+# 유전자 5,000개 × 샘플 8개 = 40,000개 행
+
+counts_table <- data.frame(
+  gene_id = rownames(counts),
+  counts,
+  row.names = NULL
+)
 
 expression_long <- counts_table |>
   pivot_longer(
     cols = -gene_id,
-    names_to = "patient_id",
+    names_to = "sample_id",
     values_to = "count"
-  ) |>
-  left_join(metadata, by = "patient_id")
+  )
 
 head(expression_long)
 nrow(expression_long)
 
-# left_join(): patient_id가 같은 환자 정보를 붙입니다.
-
 
 # ============================================================
-# 8. 발현값 분포: 히스토그램
+# 7. 발현값 분포: 히스토그램
 # ============================================================
 # x축: count
-# y축: 해당 구간에 들어가는 유전자·환자 조합의 개수
+# y축: 해당 구간에 들어가는 유전자·샘플 조합의 개수
 
 p_histogram <- ggplot(
   expression_long,
@@ -243,12 +188,12 @@ print(p_histogram)
 
 
 # ============================================================
-# 9. 로그 변환 후 분포 확인하기
+# 8. 로그 변환 후 분포 확인하기
 # ============================================================
 # log2(count + 1)
 # 0에도 적용할 수 있도록 1을 더합니다.
 # 큰 값의 범위를 압축해 분포를 살펴보기 위한 변환입니다.
-# 환자별 총 count 차이를 보정하는 정규화는 아닙니다.
+# 샘플별 총 count 차이를 보정하는 정규화는 아닙니다.
 
 expression_long <- expression_long |>
   mutate(log2_count = log2(count + 1))
@@ -273,9 +218,9 @@ print(p_log_histogram)
 
 
 # ============================================================
-# 10. 환자별 분포: 박스플롯
+# 9. 샘플별 분포: 박스플롯
 # ============================================================
-# 환자 한 명의 상자에는 유전자 100개의 값이 반영됩니다.
+# 샘플 하나의 상자에는 유전자 5,000개의 값이 반영됩니다.
 # 상자: 1사분위수 ~ 3사분위수
 # 상자 안의 선: 중앙값
 # 수염 밖 점: 기본 규칙상 잠재적 이상값이며,
@@ -283,14 +228,13 @@ print(p_log_histogram)
 
 p_boxplot <- ggplot(
   expression_long,
-  aes(x = patient_id, y = log2_count, fill = group)
+  aes(x = sample_id, y = log2_count)
 ) +
-  geom_boxplot() +
+  geom_boxplot(fill = "lightblue") +
   labs(
-    title = "Expression distribution per patient",
-    x = "Patient",
-    y = "log2(count + 1)",
-    fill = "Group"
+    title = "Expression distribution per sample",
+    x = "Sample",
+    y = "log2(count + 1)"
   ) +
   theme_bw() +
   theme(
@@ -301,64 +245,60 @@ print(p_boxplot)
 
 
 # ============================================================
-# 11. 특정 유전자 비교하기
+# 10. 특정 유전자 비교하기
 # ============================================================
 
-selected_gene <- "GENE_001"
+selected_gene <- "gene1"
 
 selected_data <- expression_long |>
   filter(gene_id == selected_gene)
 
 selected_data
 
-# 그룹별 기술통계
+# 선택한 유전자의 기술통계
 selected_data |>
-  group_by(group) |>
   summarise(
-    n_patients = n(),
+    n_samples = n(),
     mean_count = mean(count),
     median_count = median(count),
-    sd_count = sd(count),
-    .groups = "drop"
+    sd_count = sd(count)
   )
 
-# 점 하나는 환자 한 명을 나타냅니다.
+# 막대 하나는 샘플 하나의 count를 나타냅니다.
 p_gene <- ggplot(
   selected_data,
-  aes(x = group, y = count, color = group)
+  aes(x = sample_id, y = count)
 ) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(width = 0.1, height = 0) +
+  geom_col(fill = "darkorange") +
   labs(
     title = selected_gene,
-    x = "Group",
+    x = "Sample",
     y = "Raw count"
   ) +
-  theme_bw() +
-  theme(legend.position = "none")
+  theme_bw()
 
 print(p_gene)
 
-# 아직 환자별 총 count를 보정하지 않은 값입니다.
-# 이 그림만으로 그룹 간 생물학적 차이를 판단하지 않습니다.
+# 아직 샘플별 총 count를 보정하지 않은 값입니다.
+# 이 그림만으로 샘플 간 생물학적 차이를 판단하지 않습니다.
 
 
 # ============================================================
-# 12. 두 환자의 발현값 비교하기
+# 11. 두 샘플의 발현값 비교하기
 # ============================================================
 # 점 하나는 유전자 하나를 나타냅니다.
 
-patient_comparison <- data.frame(
+sample_comparison <- data.frame(
   gene_id = rownames(counts),
-  P01 = counts[, "P01"],
-  P02 = counts[, "P02"]
+  P1 = counts[, "P1"],
+  P2 = counts[, "P2"]
 )
 
 p_scatter <- ggplot(
-  patient_comparison,
-  aes(x = log2(P01 + 1), y = log2(P02 + 1))
+  sample_comparison,
+  aes(x = log2(P1 + 1), y = log2(P2 + 1))
 ) +
-  geom_point(alpha = 0.6) +
+  geom_point(alpha = 0.4, size = 1) +
   geom_abline(
     slope = 1,
     intercept = 0,
@@ -367,71 +307,29 @@ p_scatter <- ggplot(
   ) +
   coord_equal() +
   labs(
-    title = "Comparison of two patients",
-    x = "P01: log2(count + 1)",
-    y = "P02: log2(count + 1)"
+    title = "Comparison of two samples",
+    x = "P1: log2(count + 1)",
+    y = "P2: log2(count + 1)"
   ) +
   theme_bw()
 
 print(p_scatter)
 
-# 빨간 점선은 두 환자의 값이 같은 위치입니다.
+# 빨간 점선은 두 샘플의 값이 같은 위치입니다.
 
 
 # ============================================================
-# 13. 결과 저장하기
+# 12. 결과 저장하기
 # ============================================================
 
 write.csv(
-  patient_summary,
-  "outputs/patient_summary.csv",
+  sample_summary,
+  "R_class/outputs/sample_summary.csv",
   row.names = FALSE
 )
 
 write.csv(
   gene_summary,
-  "outputs/gene_summary.csv",
+  "R_class/outputs/gene_summary.csv",
   row.names = FALSE
 )
-
-ggsave(
-  "outputs/patient_total_counts.png",
-  plot = p_total,
-  width = 9,
-  height = 5,
-  dpi = 150
-)
-
-ggsave(
-  "outputs/patient_expression_boxplot.png",
-  plot = p_boxplot,
-  width = 9,
-  height = 5,
-  dpi = 150
-)
-
-
-# ============================================================
-# 14. 실습 문제
-# ============================================================
-
-# 문제 1. 총 count가 가장 적은 환자를 찾으세요.
-
-
-# 문제 2. 평균 count가 가장 높은 유전자 5개를 확인하세요.
-
-
-# 문제 3. selected_gene을 "GENE_050"으로 바꾸고,
-#         11번 부분을 다시 실행해 그림을 비교하세요.
-
-
-# 문제 4. 히스토그램의 bins를 10과 80으로 바꿔보세요.
-#         분포가 어떻게 다르게 보이나요?
-
-
-# 문제 5. P01과 P02 대신 P03과 P04를 비교하는
-#         산점도를 그려보세요.
-
-
-# 문제 6. 환자별 박스플롯에서 중앙값이 높은 환자가
-#         총 count도 높은지 확인하세요.
