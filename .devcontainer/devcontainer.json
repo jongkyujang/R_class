@@ -6,8 +6,9 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "overrideCommand": true,
   "remoteUser": "rstudio",
-  "postStartCommand": "sudo rserver --auth-none=1 --auth-minimum-user-id=1000",
+  "postStartCommand": "rserver",
   "forwardPorts": [8787],
   "portsAttributes": {
     "8787": {
