@@ -59,7 +59,7 @@ sum(is.na(counts))
 range(counts)
 
 # 결과 저장 폴더
-dir.create("outputs", showWarnings = FALSE)
+dir.create("R_class/outputs", showWarnings = FALSE)
 
 
 # ============================================================
