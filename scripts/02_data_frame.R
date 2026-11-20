@@ -281,18 +281,18 @@ patients_missing |>
 getwd()
 
 # 현재 작업 폴더 아래에 outputs 폴더를 만듭니다.
-dir.create("outputs", showWarnings = FALSE)
+dir.create("R_class/outputs", showWarnings = FALSE)
 
 # row.names = FALSE: 별도의 행 번호를 파일에 저장하지 않습니다.
 write.csv(
   patients,
-  file = "outputs/patients_practice.csv",
+  file = "R_class/outputs/patients_practice.csv",
   row.names = FALSE
 )
 
 # 저장한 CSV를 다시 읽습니다.
 patients_loaded <- read.csv(
-  "outputs/patients_practice.csv"
+  "R_class/outputs/patients_practice.csv"
 )
 
 head(patients_loaded)
