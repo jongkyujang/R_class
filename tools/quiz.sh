@@ -70,11 +70,11 @@ case "${1:-}" in
     ;;
   quiz4)
     result_field="$F_QUIZ4"
-    echo 'Quiz 4. RNA 발현 행렬과 산점도'
-    ask '1. P1부터 P8까지 들어 있는 count 행렬에 ncol(counts)를 실행하면? (숫자만)' \
-      '2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3'
-    ask '2. P1과 P2의 발현값을 비교하는 산점도에서 점 하나는 무엇인가요? (유전자/샘플)' \
-      '66e4918893c37f527c34de89dae3ebbc1e79402f6fa049aaf8b6f964ab81fd54'
+    echo 'Quiz 4. 선형 분류'
+    ask '1. 모델이 virginica일 확률을 0.6으로 예측했습니다. 분류 기준을 0.5에서 0.7로 높이면, 이 꽃은 어떤 품종으로 분류될까요? (versicolor / virginica)' \
+      '1eb30a01760abb042136843e4185118b70bf7cc0bffecbdbbed862a24a2a5951'
+    ask '2. 어떤 직선을 그어도 두 품종을 완벽하게 나눌 수 없다면, 직선 하나를 분류 경계로 쓰는 모델이 이 데이터를 모두 맞힐 수 있나요? (y / n)' \
+      '1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9'
     ;;
   *)
     echo '사용법: quiz1 | quiz2 | quiz3 | quiz4'
