@@ -85,12 +85,37 @@ esac
 result="$score/$total ($marks)"
 printf '\n결과: %s\n' "$result"
 
-if [[ ! "$result_field" =~ ^entry\.[0-9]+$ ]]; then
-  echo '이 퀴즈의 구글폼 문항 ID가 설정되면 제출할 수 있습니다.'
+quiz="${1:-}"
+score_dir="$HOME/.r_class_quiz"
+
+if ! mkdir -p -- "$score_dir" ||
+   ! printf '%s\n' "$result" > "$score_dir/$quiz.txt"; then
+  echo '퀴즈 결과를 저장하지 못했습니다.'
+  exit 1
+fi
+
+# 퀴즈 1~3은 점수를 저장하고 종료합니다.
+if [[ "$quiz" != "quiz4" ]]; then
+  echo '결과를 저장했습니다. 퀴즈 4가 끝나면 한꺼번에 제출합니다.'
   exit 0
 fi
 
-echo '학번, 이름, 채점 결과를 구글폼으로 제출합니다.'
+# 퀴즈 4가 끝나면 네 퀴즈의 결과를 모두 확인합니다.
+for quiz_number in 1 2 3 4; do
+  if [[ ! -s "$score_dir/quiz$quiz_number.txt" ]]; then
+    printf '퀴즈 %s 결과가 없습니다. quiz%s를 먼저 완료한 뒤 quiz4를 다시 실행하세요.\n' \
+      "$quiz_number" "$quiz_number"
+    exit 1
+  fi
+done
+
+printf '\n제출할 결과\n'
+for quiz_number in 1 2 3 4; do
+  printf '  퀴즈 %s  %s\n' \
+    "$quiz_number" "$(<"$score_dir/quiz$quiz_number.txt")"
+done
+
+echo '학번, 이름, 퀴즈 1~4 결과를 구글폼으로 제출합니다.'
 while true; do
   IFS= read -r -p '학번: ' student_id || exit 1
   IFS= read -r -p '이름: ' student_name || exit 1
@@ -105,14 +130,20 @@ if ! status=$(curl --silent --show-error --output /dev/null \
   --write-out '%{http_code}' --max-time 15 "$FORM_URL" \
   --data-urlencode "$F_ID=$student_id" \
   --data-urlencode "$F_NAME=$student_name" \
-  --data-urlencode "$result_field=$result"); then
-  echo '구글폼에 연결하지 못했습니다.'
+  --data-urlencode "$F_QUIZ1=$(<"$score_dir/quiz1.txt")" \
+  --data-urlencode "$F_QUIZ2=$(<"$score_dir/quiz2.txt")" \
+  --data-urlencode "$F_QUIZ3=$(<"$score_dir/quiz3.txt")" \
+  --data-urlencode "$F_QUIZ4=$(<"$score_dir/quiz4.txt")"); then
+  echo '구글폼에 연결하지 못했습니다. 저장된 퀴즈 결과는 남아 있습니다.'
   exit 1
 fi
 
-if [[ "$status" == "200" ]]; then
-  echo '제출 요청을 보냈습니다.'
-else
-  echo "제출 요청이 실패했습니다 (HTTP $status)."
-  exit 1
-fi
+case "$status" in
+  200)
+    echo '퀴즈 1~4 결과를 한 건으로 제출 요청했습니다.'
+    ;;
+  *)
+    printf '제출 요청이 실패했습니다 (HTTP %s). 저장된 퀴즈 결과는 남아 있습니다.\n' "$status"
+    exit 1
+    ;;
+esac
